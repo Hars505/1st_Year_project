@@ -988,7 +988,6 @@ import static java.lang.Thread.sleep;
                                 ((Seller) currentUser).removeCar(carId);
                                 break;
                             case "4":
-                                scanner.nextLine();
                                 displayAllCars();
                                 break;
                             case "0":
