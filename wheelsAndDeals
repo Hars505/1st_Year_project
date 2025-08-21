@@ -1,846 +1,208 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import static java.lang.Thread.sleep;
 
-    public class wheelsAndDeals
+class wheelsAndDeals132
+{
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/wheels and deals1";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "";
+    static Scanner scanner=new Scanner(System.in);
+    private static Connection getConnection() throws SQLException
     {
-        private static final String DB_URL = "jdbc:mysql://localhost:3306/wheels and deals";
-        private static final String DB_USER = "root";
-        private static final String DB_PASSWORD = "";
-        private static Connection getConnection() throws SQLException
+        return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+    }
+    public static class Car
+    {
+        private final int carId;
+        private final String company;
+        private final String model;
+        private final int year;
+        private final String description;
+        private final double price;
+        private final int sellerId;
+        private final String fuelType;//NEW
+        private boolean approved;
+        private boolean sold;
+        public Car(int carId, String company, String model, int year, String description, double price, int sellerId,String fuelType)
         {
-            return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            this.carId = carId;
+            this.company = company;
+            this.model = model;
+            this.year = year;
+            this.description = description;
+            this.price = price;
+            this.sellerId = sellerId;
+            this.fuelType=fuelType;
+            this.approved = false;
+            this.sold = false;
         }
-        public static class Car
+        // Getters and setters
+        public int getCarId()
         {
-            private final int carId;
-            private final String company;
-            private final String model;
-            private final int year;
-            private final String description;
-            private final double price;
-            private final int sellerId;
-            private boolean approved;
-            private boolean sold;
-            public Car(int carId, String company, String model, int year, String description, double price, int sellerId)
-            {
-                this.carId = carId;
-                this.company = company;
-                this.model = model;
-                this.year = year;
-                this.description = description;
-                this.price = price;
-                this.sellerId = sellerId;
-                this.approved = false;
-                this.sold = false;
-            }
-            // Getters and setters
-            public int getCarId()
-            {
-                return carId;
-            }
-            public String getCompany()
-            {
-                return company;
-            }
-            public String getModel()
-            {
-                return model;
-            }
-            public int getYear()
-            {
-                return year;
-            }
-            public String getDescription()
-            {
-                return description;
-            }
-            public double getPrice()
-            {
-                return price;
-            }
-            public int getSellerId()
-            {
-                return sellerId;
-            }
-            public boolean isApproved()
-            {
-                return approved;
-            }
-            public void setApproved(boolean approved)
-            {
-                this.approved = approved;
-            }
-            public boolean isSold()
-            {
-                return sold;
-            }
-            public void setSold(boolean sold)
-            {
-                this.sold = sold;
-            }
-            @Override
-            public String toString()
-            {
-                return "CarId=" + carId + ", company='" + company + '\'' + ", model='" + model + '\'' + ", year=" + year + ", description='" + description + '\'' +
-                        ", price=" + price + ", sellerId=" + sellerId + ", approved=" + approved + ", sold=" + sold;
-            }
+            return carId;
         }
-        public static abstract class User
+        public String getCompany()
         {
-            private final int userId;
-            private final String username;
-            private final String password;
-            private final String role;
-            public User(int userId, String username, String password, String role)
-            {
-                this.userId = userId;
-                this.username = username;
-                this.password = password;
-                this.role = role;
-            }
-            // Getters and setters
-            public int getUserId()
-            {
-                return userId;
-            }
-            public String getUsername()
-            {
-                return username;
-            }
-            public String getPassword()
-            {
-                return password;
-            }
-            public String getRole()
-            {
-                return role;
-            }
-            @Override
-            public String toString()
-            {
-                return "User{" +
-                        "userId=" + userId +
-                        ", username='" + username + '\'' +
-                        ", password='" + password + '\'' +
-                        ", role='" + role + '\'' + '}';
-            }
+            return company;
         }
-        public static class Seller extends User implements SellerInterface
+        public String getModel()
         {
-            private final LL<Car> carsForSale;
-            public Seller(int userId, String username, String password)
-            {
-                super(userId, username, password, "seller");
-                this.carsForSale = new LL<>();
-                try
-                {
-                    loadCarsForSale();
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error loading cars for sale: " + e.getMessage());
-                }
-            }
-            public void addCar(Car car)
-            {
-                try
-                {
-                    insertCar(car);
-                    carsForSale.add(car);
-                    System.out.println("Listing car: " + car);
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error listing car: " + e.getMessage());
-                }
-            }
-            public void updateCar(Car car)
-            {
-                try
-                {
-                    updateCarInDatabase(car);
-                    for (int i = 0; i < carsForSale.size(); i++)
-                    {
-                        if (carsForSale.get(i).getCarId() == car.getCarId())
-                        {
-                            carsForSale.set(i, car);
-                            break;
-                        }
-                    }
-                    System.out.println("Updating car: " + car);
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error updating car: " + e.getMessage());
-                }
-            }
-            public void removeCar(int carId)
-            {
-                try
-                {
-                    deleteCar(carId);
-                    for (int i = 0; i < carsForSale.size(); i++)
-                    {
-                        if (carsForSale.get(i).getCarId() == carId)
-                        {
-                            carsForSale.remove(i);
-                            break;
-                        }
-                    }
-                    System.out.println("Removing car with ID: " + carId);
-                }
-                catch (SQLException e)
-                {
-                    System.out.println("Error removing car: " + e.getMessage());
-                }
-            }
-            public LL<Car> getCarsForSale()
-            {
-                return carsForSale;
-            }
-            private void loadCarsForSale() throws SQLException
-            {
-                String sql = "SELECT * FROM cars WHERE seller_id = ?";
-                try (Connection conn = getConnection();
-                     PreparedStatement pstmt = conn.prepareStatement(sql))
-                {
-                    pstmt.setInt(1, getUserId());
-                    ResultSet rs = pstmt.executeQuery();
-                    while (rs.next())
-                    {
-                        Car car = new Car(
-                                rs.getInt("car_id"),
-                                rs.getString("company"),
-                                rs.getString("model"),
-                                rs.getInt("year"),
-                                rs.getString("description"),
-                                rs.getDouble("reserve_price"),
-                                rs.getInt("seller_id")
-                        );
-                        car.setApproved(rs.getBoolean("approved"));
-                        car.setSold(rs.getBoolean("sold"));
-                        carsForSale.add(car);
-                    }
-                }
-            }
+            return model;
         }
-        public static class Buyer extends User implements BuyerInterface
+        public int getYear()
         {
-            private final List<Integer> purchasedCarIds;
-            public Buyer(int userId, String username, String password)
-            {
-                super(userId, username, password, "buyer");
-                this.purchasedCarIds = new ArrayList<>();
-                try
-                {
-                    loadPurchasedCars();
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error loading purchased cars: " + e.getMessage());
-                }
-            }
-            public void browseCars()
-            {
-                System.out.println("Browsing cars...");
-                try
-                {
-                    displayAvailableCars();
-                }
-                catch (SQLException e)
-                {
-                    System.out.println("Error browsing cars: " + e.getMessage());
-                }
-            }
-            public void buyCar(int carId, String paymentMethod)
-            {
-                try
-                {
-                    Car car = getCar(carId);
-                    if (car == null || car.isSold() || !car.isApproved())
-                    {
-                        System.out.println("Car is not available for purchase.");
-                        return;
-                    }
-                    System.out.println("Processing payment using " + paymentMethod + "...");
-                    boolean paymentSuccessful = processPayment(paymentMethod, car.getPrice());
-                    if (paymentSuccessful)
-                    {
-                        purchaseCar(carId, getUserId());
-                        purchasedCarIds.add(carId);
-                        System.out.println("Car purchased successfully!");
-                    }
-                    else
-                    {
-                        System.out.println("Payment failed. Car purchase cancelled.");
-                    }
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error buying car: " + e.getMessage());
-                }
-                catch (InterruptedException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-            public void viewPurchasedCars()
-            {
-                System.out.println("Viewing purchased cars...");
-                try
-                {
-                    displayPurchasedCars(getUserId());
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error viewing purchased cars: " + e.getMessage());
-                }
-            }
-            public void searchCars(String model, String company, Double maxPrice)
-            {
-                try
-                {
-                    searchAndDisplayCars(model, company, maxPrice);
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error searching cars: " + e.getMessage());
-                }
-            }
-            private void loadPurchasedCars() throws SQLException
-            {
-                String sql = "SELECT car_id FROM purchases WHERE buyer_id = ?";
-                try (Connection conn = getConnection();
-                     PreparedStatement pstmt = conn.prepareStatement(sql))
-                {
-                    pstmt.setInt(1, getUserId());
-                    ResultSet rs = pstmt.executeQuery();
-                    while (rs.next())
-                    {
-                        purchasedCarIds.add(rs.getInt("car_id"));
-                    }
-                }
-            }
+            return year;
         }
-        public static class Admin extends User implements AdminInterface
+        public String getDescription()
         {
-            private static boolean adminExists = false; // Ensure only one admin
-            public Admin(int userId, String username, String password)
-            {
-                super(userId, username, password, "admin");
-            }
-            public static boolean isAdminExists()
-            {
-                return adminExists;
-            }
-            public static void setAdminExists(boolean exists)
-            {
-                adminExists = exists;
-            }
-            public void manageUsers()
-            {
-                System.out.println("Managing users...");
-            }
-            public void manageCars()
-            {
-                System.out.println("Managing cars...");
-                approveOrRejectCar(null, null);
-            }
-            public void approveCar(int carId)
-            {
-                try
-                {
-                    approveCarInDatabase(carId);
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error approving car: " + e.getMessage());
-                }
-            }
-            public void rejectCar(int carId)
-            {
-                try
-                {
-                    rejectCarInDatabase(carId);
-                }
-                catch (SQLException e)
-                {
-                    System.err.println("Error rejecting car: " + e.getMessage());
-                }
-            }
+            return description;
         }
-        interface SellerInterface
+        public double getPrice()
         {
-            void addCar(Car car);
-            void updateCar(Car car);
-            void removeCar(int carId);
+            return price;
         }
-        interface BuyerInterface
+        public int getSellerId()
         {
-            void browseCars();
-            void buyCar(int carId, String paymentMethod);
-            void viewPurchasedCars();
-            void searchCars(String model, String company, Double maxPrice);
+            return sellerId;
         }
-        interface AdminInterface
+        public String getFuelType() //NEW
         {
-            void manageUsers();
-            void manageCars();
+            return fuelType;
         }
-        // Insert Car
-        public static void insertCar(Car car) throws SQLException
+        public boolean isApproved()
         {
-            String sql = "INSERT INTO cars (car_id, company, model, year, description, reserve_price, seller_id, approved, sold) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, car.getCarId());
-                pstmt.setString(2, car.getCompany());
-                pstmt.setString(3, car.getModel());
-                pstmt.setInt(4, car.getYear());
-                pstmt.setString(5, car.getDescription());
-                pstmt.setDouble(6, car.getPrice());
-                pstmt.setInt(7, car.getSellerId());
-                pstmt.setBoolean(8, car.isApproved());
-                pstmt.setBoolean(9, car.isSold());
-                pstmt.executeUpdate();
-                System.out.println("Car inserted successfully into the database.");
-            }
+            return approved;
         }
-        // Display car
-        public static void displayAllCars() throws SQLException
+        public void setApproved(boolean approved)
         {
-            String sql = "SELECT car_id, company, model, year, description, reserve_price, seller_id, approved, sold FROM cars";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql);
-                 ResultSet rs = pstmt.executeQuery())
-            {
-                boolean carFound = false;
-                System.out.println("------------------------------------------------------------");
-                System.out.println("ID | company | Model | Year | Description | Price | Seller ID | Approved | Sold");
-                System.out.println("------------------------------------------------------------");
-                while (rs.next())
-                {
-                    carFound = true;
-                    int carId = rs.getInt("car_id");
-                    String company = rs.getString("company");
-                    String model = rs.getString("model");
-                    int year = rs.getInt("year");
-                    String description = rs.getString("description");
-                    double price = rs.getDouble("reserve_price");
-                    int sellerId = rs.getInt("seller_id");
-                    boolean approved = rs.getBoolean("approved");
-                    boolean sold = rs.getBoolean("sold");
-                    System.out.format("%d | %s | %s | %d | %s | %.2f | %d | %s | %s\n",
-                            carId, company, model, year, description, price, sellerId, approved ? "Yes" : "No", sold ? "Yes" : "No");
-                }
-                if (!carFound)
-                {
-                    System.out.println("Sorry, no cars available.");
-                }
-                System.out.println("------------------------------------------------------------");
-            }
+            this.approved = approved;
         }
-        // Get Car
-        public static Car getCar(int carId) throws SQLException
+        public boolean isSold()
         {
-            String sql = "SELECT * FROM cars WHERE car_id = ?";
-            Car car = null;
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, carId);
-                ResultSet rs = pstmt.executeQuery();
-                if (rs.next())
-                {
-                    car = new Car(
-                            rs.getInt("car_id"),
-                            rs.getString("company"),
-                            rs.getString("model"),
-                            rs.getInt("year"),
-                            rs.getString("description"),
-                            rs.getDouble("reserve_price"),
-                            rs.getInt("seller_id"));
-                    car.setApproved(rs.getBoolean("approved"));
-                    car.setSold(rs.getBoolean("sold"));
-                }
-            }
-            return car;
+            return sold;
         }
-        // Update Car
-        public static void updateCarInDatabase(Car car) throws SQLException
+        public void setSold(boolean sold)
         {
-            String sql = "UPDATE cars SET company = ?, model = ?, year = ?, description = ?, reserve_price = ? WHERE car_id = ?";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setString(1, car.getCompany());
-                pstmt.setString(2, car.getModel());
-                pstmt.setInt(3, car.getYear());
-                pstmt.setString(4, car.getDescription());
-                pstmt.setDouble(5, car.getPrice());
-                pstmt.setInt(6, car.getCarId());
-                pstmt.executeUpdate();
-                System.out.println("Car updated successfully in the database.");
-            }
+            this.sold = sold;
         }
-        // Delete Car
-        public static void deleteCar(int carId) throws SQLException
+        @Override
+        public String toString()
         {
-            String sql = "DELETE FROM cars WHERE car_id = ?";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, carId);
-                pstmt.executeUpdate();
-                System.out.println("Car deleted successfully from the database.");
-            }
+            return "CarId=" + carId + ", company='" + company + '\'' + ", model='" + model + '\'' + ", year=" + year + ", description='" + description + '\'' +
+                    ", price=" + price + ", sellerId=" + sellerId +", fuelType=" + fuelType +  ", approved=" + approved + ", sold=" + sold;
         }
-        // Approve Car
-        public static void approveCarInDatabase(int carId) throws SQLException
+    }
+    public static abstract class User
+    {
+        private final int userId;
+        private final String username;
+        private final String password;
+        private final String role;
+        private final String phoneNo;
+        public User(int userId, String username, String password, String role,String phoneNo)
         {
-            String sql = "UPDATE cars SET approved = TRUE WHERE car_id = ?";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, carId);
-                pstmt.executeUpdate();
-                System.out.println("Car approved successfully.");
-            }
+            this.userId = userId;
+            this.username = username;
+            this.password = password;
+            this.role = role;
+            this.phoneNo = phoneNo;
         }
-        // Reject Car
-        public static void rejectCarInDatabase(int carId) throws SQLException
+        // Getters and setters
+        public int getUserId()
         {
-            String sql = "UPDATE cars SET approved = FALSE WHERE car_id = ?";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, carId);
-                pstmt.executeUpdate();
-                System.out.println("Car rejected successfully.");
-            }
+            return userId;
         }
-        // Purchase Car
-        public static void purchaseCar(int carId, int buyerId) throws SQLException
+        public String getUsername()
         {
-            String sql = "UPDATE cars SET sold = TRUE WHERE car_id = ? AND approved = TRUE AND sold = FALSE";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, carId);
-                int rowsAffected = pstmt.executeUpdate();
-                if (rowsAffected > 0)
-                {
-                    System.out.println("Car purchased successfully.");
-                    // Optionally, record the purchase in a separate table
-                    recordPurchase(carId, buyerId);
-                }
-                else
-                {
-                    System.out.println("Car purchase failed. It may be already sold, not approved, or does not exist.");
-                }
-            }
+            return username;
         }
-        // Record Purchase
-        public static void recordPurchase(int carId, int buyerId) throws SQLException
+        public String getPassword()
         {
-            String sql = "INSERT INTO purchases (car_id, buyer_id, purchase_date) VALUES (?, ?, NOW())";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, carId);
-                pstmt.setInt(2, buyerId);
-                pstmt.executeUpdate();
-                System.out.println("Purchase recorded successfully.");
-            }
+            return password;
         }
-        // Display Purchased Cars
-        public static void displayPurchasedCars(int buyerId) throws SQLException
+        public String getRole()
         {
-            String sql = "SELECT c.* FROM cars c INNER JOIN purchases p ON c.car_id = p.car_id WHERE p.buyer_id = ?";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, buyerId);
-                ResultSet rs = pstmt.executeQuery();
-                System.out.println("Purchased Cars:");
-                while (rs.next())
-                {
-                    System.out.println("Car ID: " + rs.getInt("car_id") +
-                            ", Company: " + rs.getString("company") +
-                            ", Model: " + rs.getString("model") +
-                            ", Year: " + rs.getString("year") +
-                            ", Description: " + rs.getString("description") +
-                            ", Price: " + rs.getDouble("reserve_price"));
-                }
-            }
+            return role;
         }
-        // Insert User
-        public static void insertUser(User user) throws SQLException
+        public String getPhoneNo()
         {
-            String sql = "INSERT INTO users (user_id, username, password, role) VALUES (?, ?, ?, ?)";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setInt(1, user.getUserId());
-                pstmt.setString(2, user.getUsername());
-                pstmt.setString(3, user.getPassword());
-                pstmt.setString(4, user.getRole());
-                pstmt.executeUpdate();
-                System.out.println("User inserted successfully into the database.");
-            }
+            return phoneNo;
         }
-        // Display Available Cars
-        public static void displayAvailableCars() throws SQLException
-        {
-            String sql = "SELECT * FROM cars WHERE approved = TRUE AND sold = FALSE";
-            try (Connection conn = getConnection();
-                 Statement stmt = conn.createStatement();
-                 ResultSet rs = stmt.executeQuery(sql))
-            {
-                System.out.println("Available Cars:");
-                while (rs.next())
-                {
-                    System.out.println("Car ID: " + rs.getInt("car_id") +
-                            ", Company: " + rs.getString("company") +
-                            ", Model: " + rs.getString("model") +
-                            ", Year: " + rs.getString("year") +
-                            ", Description: " + rs.getString("description") +
-                            ", Price: " + rs.getDouble("reserve_price"));
-                }
-            }
+
+        @Override
+        public String toString() {
+            return "User{" +
+                    "userId=" + userId +
+                    ", username='" + username + '\'' +
+                    ", password='" + password + '\'' +
+                    ", role='" + role + '\'' +
+                    ", phoneNo='" + phoneNo + '\'' +
+                    '}';
         }
-        // Search and Display Cars
-        public static void searchAndDisplayCars(String model, String company, Double maxPrice) throws SQLException
-        {
-            String sql = "SELECT * FROM cars WHERE approved = TRUE AND sold = FALSE";
-            StringBuilder conditions = new StringBuilder();
-            if (model != null && !model.isEmpty())
-            {
-                conditions.append(" AND model LIKE '%").append(model).append("%'");
-            }
-            if (company != null && !company.isEmpty())
-            {
-                conditions.append(" AND company LIKE '%").append(company).append("%'");
-            }
-            if (maxPrice != null)
-            {
-                conditions.append(" AND reserve_price <= ").append(maxPrice);
-            }
-            if (conditions.length() > 0)
-            {
-                sql += conditions.toString();
-            }
-            try (Connection conn = getConnection();
-                 Statement stmt = conn.createStatement();
-                 ResultSet rs = stmt.executeQuery(sql))
-            {
-                System.out.println("Search Results:");
-                boolean found = false;
-                while (rs.next())
-                {
-                    found = true;
-                    System.out.println("Car ID: " + rs.getInt("car_id") +
-                            ", Company: " + rs.getString("company") +
-                            ", Model: " + rs.getString("model") +
-                            ", Year: " + rs.getString("year") +
-                            ", Description: " + rs.getString("description") +
-                            ", Price: " + rs.getDouble("reserve_price"));
-                }
-                if (!found)
-                {
-                    System.out.println("No cars found matching your criteria.");
-                }
-            }
-        }
-        // method for payment processing
-        public static boolean processPayment(String paymentMethod, double amount) throws InterruptedException
-        {
-            if (paymentMethod.equalsIgnoreCase("card"))
-            {
-                sleep(1000);
-                System.out.println("Simulating card payment of $" + amount);
-                return true;
-            }
-            else if (paymentMethod.equalsIgnoreCase("cheque"))
-            {
-                sleep(1000);
-                System.out.println("Simulating cheque payment of $" + amount);
-                return true;
-            }
-            else if (paymentMethod.equalsIgnoreCase("online via bank"))
-            {
-                sleep(1000);
-                System.out.println("Simulating online payment of $" + amount);
-                return true;
-            }
-            else
-            {
-                sleep(1000);
-                System.out.println("Unsupported payment method.");
-                return false;
-            }
-        }
-        // Helper methods for getting input with error handling
-        public static int getIntInput(Scanner scanner, String prompt)
-        {
-            while (true)
-            {
-                try
-                {
-                    System.out.print(prompt);
-                    return scanner.nextInt();
-                }
-                catch (InputMismatchException e)
-                {
-                    System.out.println("Invalid input. Please enter an integer.");
-                    scanner.next();
-                }
-            }
-        }
-        public static double getDoubleInput(Scanner scanner, String prompt)
-        {
-            while (true)
-            {
-                try
-                {
-                    System.out.print(prompt);
-                    return scanner.nextDouble();
-                }
-                catch (InputMismatchException e)
-                {
-                    System.out.println("Invalid input. Please enter a number.");
-                    scanner.next();
-                }
-            }
-        }
-        public static String getStringInput(Scanner scanner, String prompt)
-        {
-            System.out.print(prompt);
-            return scanner.nextLine();
-        }
-        // Check if user exists
-        public static User checkUser(String username, String password) throws SQLException
-        {
-            String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-            try (Connection conn = getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql))
-            {
-                pstmt.setString(1, username);
-                pstmt.setString(2, password);
-                ResultSet rs = pstmt.executeQuery();
-                if (rs.next())
-                {
-                    int userId = rs.getInt("user_id");
-                    String role = rs.getString("role");
-                    switch (role)
-                    {
-                        case "admin":
-                            return new Admin(userId, username, password);
-                        case "seller":
-                            return new Seller(userId, username, password);
-                        case "buyer":
-                            return new Buyer(userId, username, password);
-                    }
-                }
-            }
-            return null;
-        }
-        // Register new user
-        public static User registerUser(Scanner scanner, String role)
-        {
-            System.out.println(role.substring(0, 1).toUpperCase() + role.substring(1) + " Registration:");
-            int userId = getIntInput(scanner, "Enter User ID: ");
-            scanner.nextLine();
-            String username = getStringInput(scanner, "Enter Username: ");
-            String password = getStringInput(scanner, "Enter Password: ");
-            User newUser = null;
-            try
-            {
-                switch (role)
-                {
-                    case "admin":
-                        if (Admin.isAdminExists())
-                        {
-                            System.out.println("An admin account already exists.");
-                            return null;
-                        }
-                        newUser = new Admin(userId, username, password);
-                        Admin.setAdminExists(true);
-                        break;
-                    case "seller":
-                        newUser = new Seller(userId, username, password);
-                        break;
-                    case "buyer":
-                        newUser = new Buyer(userId, username, password);
-                        break;
-                    default:
-                        System.out.println("Invalid role.");
-                        return null;
-                }
-                insertUser(newUser);
-                System.out.println("Registration successful!");
-            }
-            catch (SQLException e)
-            {
-                System.err.println("Error registering user: " + e.getMessage());
-                return null;
-            }
-            return newUser;
-        }
-        // Admin Approval/Rejection with car list
-        public static void approveOrRejectCar(Admin admin, Scanner scanner)
-        {
+    }
+    public static class Seller extends User implements SellerInterface {
+        private final LL<Car> carsForSale;
+
+        public Seller(int userId, String username, String password,String phoneNo) {
+            super(userId, username, password, "seller",phoneNo);
+            this.carsForSale = new LL<>();
             try {
-                List<Car> pendingCars = getPendingCars();
-                if (pendingCars.isEmpty())
-                {
-                    System.out.println("No cars pending approval.");
-                    return;
-                }
-                System.out.println("Pending Cars for Approval:");
-                for (Car car : pendingCars)
-                {
-                    System.out.println(car.toString());
-                }
-                int carId = getIntInput(scanner, "Enter Car ID to approve/reject: ");
-                scanner.nextLine(); // Consume newline
-                System.out.print("Approve (a) or Reject (r)? ");
-                String choice = scanner.nextLine();
-                if (choice.equalsIgnoreCase("a"))
-                {
-                    admin.approveCar(carId);
-                }
-                else if (choice.equalsIgnoreCase("r"))
-                {
-                    admin.rejectCar(carId);
-                }
-                else
-                {
-                    System.out.println("Invalid choice.");
-                }
-            }
-            catch (SQLException e)
-            {
-                System.err.println("Error approving/rejecting car: " + e.getMessage());
+                loadCarsForSale();
+            } catch (SQLException e) {
+                System.err.println("Error loading cars for sale: " + e.getMessage());
             }
         }
-        // Get pending cars
-        public static List<Car> getPendingCars() throws SQLException
-        {
-            String sql = "SELECT * FROM cars WHERE approved = FALSE";
-            List<Car> pendingCars = new ArrayList<>();
-            try (Connection conn = getConnection();
-                 Statement stmt = conn.createStatement();
-                 ResultSet rs = stmt.executeQuery(sql))
+
+        public void addCar(Car car) {
+            try {
+                insertCar(car);
+                carsForSale.add(car);
+                System.out.println("Listing car: " + car);
+            } catch (SQLException e) {
+                System.err.println("Error listing car: " + e.getMessage());
+            }
+        }
+        public void updateCar(Car car) {
+            try {
+                displayAvailableCars();
+                updateCarInDatabase(car);
+            } catch (SQLException e)
             {
-                while (rs.next())
-                {
+                System.err.println("Error updating car: " + e.getMessage());
+            }
+        }
+        public void removeCar(int carId) {
+            try {
+                displayAllCars();
+                deleteCar(carId);
+                for (int i = 0; i < carsForSale.size(); i++) {
+                    if (carsForSale.get(i).getCarId() == carId) {
+                        carsForSale.remove(i);
+                        break;
+                    }
+                }
+                System.out.println("Removing car with ID: " + carId);
+            } catch (SQLException e) {
+                System.out.println("Error removing car: " + e.getMessage());
+            }
+        }
+
+        public LL<Car> getCarsForSale() {
+            return carsForSale;
+        }
+
+        private void loadCarsForSale() throws SQLException {
+            String sql = "SELECT * FROM cars WHERE seller_id = ? AND sold = FALSE";
+            try (Connection conn = getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, getUserId());
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
                     Car car = new Car(
                             rs.getInt("car_id"),
                             rs.getString("company"),
@@ -848,56 +210,1214 @@ import static java.lang.Thread.sleep;
                             rs.getInt("year"),
                             rs.getString("description"),
                             rs.getDouble("reserve_price"),
-                            rs.getInt("seller_id"));
+                            rs.getInt("seller_id"),
+                            rs.getString("fuel_type"));
                     car.setApproved(rs.getBoolean("approved"));
-                    pendingCars.add(car);
+                    car.setSold(rs.getBoolean("sold"));
+                    carsForSale.add(car);
                 }
             }
-            return pendingCars;
         }
-        // Simplified Car Listing Input
-        public static Car getCarInput(Scanner scanner, int sellerId)
+    }
+    public static class Buyer extends User implements BuyerInterface
+    {
+        private final List<Integer> purchasedCarIds;
+        public Buyer(int userId, String username, String password,String phoneNo)
         {
-            System.out.println("Enter car details:");
-            int carId = getIntInput(scanner, "Car ID: ");
-            scanner.nextLine();
-            String company = getStringInput(scanner, "company: ");
-            String model = getStringInput(scanner, "Model: ");
-            int year = getIntInput(scanner, "Year: ");
-            scanner.nextLine();
-            String description = getStringInput(scanner, "Description: ");
-            double reservePrice = getDoubleInput(scanner, "Price: ");
-            scanner.nextLine();
-            return new Car(carId, company, model, year, description, reservePrice, sellerId);
+            super(userId, username, password, "buyer",phoneNo);
+            this.purchasedCarIds = new ArrayList<>();
+            try
+            {
+                loadPurchasedCars();
+            }
+            catch (SQLException e)
+            {
+                System.err.println("Error loading purchased cars: " + e.getMessage());
+            }
         }
-        public static void main(String[] args) throws SQLException
+        public void browseCars()
+        {
+            System.out.println("Browsing cars...");
+            try
+            {
+                displayAvailableCars();
+            }
+            catch (SQLException e)
+            {
+                System.out.println("Error browsing cars: " + e.getMessage());
+            }
+        }
+        public boolean buyCar(int carId, String paymentMethod)
+        {
+            try
+            {
+                Car car = getCar(carId);
+                if (car == null || car.isSold() || !car.isApproved())
+                {
+                    System.out.println("Car is not available for purchase.");
+                    return false;
+                }
+                System.out.println("Processing payment using " + paymentMethod + "...");
+                boolean paymentSuccessful = processPayment(paymentMethod, car.getPrice());
+                if (paymentSuccessful)
+                {
+                    purchaseCar(carId, getUserId());
+                    purchasedCarIds.add(carId);
+                    System.out.println("Car purchased successfully!");
+                    return true;
+                }
+                else
+                {
+                    System.out.println("Payment failed. Car purchase cancelled.");
+                }
+            }
+            catch (SQLException e)
+            {
+                System.err.println("Error buying car: " + e.getMessage());
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+            return false;
+        }
+        public void viewPurchasedCars()
+        {
+            System.out.println("Viewing purchased cars...");
+            try
+            {
+                displayPurchasedCars(getUserId());
+            }
+            catch (SQLException e)
+            {
+                System.err.println("Error viewing purchased cars: " + e.getMessage());
+            }
+        }
+        public void searchCars(String model, String company, Double maxPrice, String fuelType) {
+            try
+            {
+                searchAndDisplayCars(model, company, maxPrice, fuelType);
+            } catch (SQLException e)
+            {
+                System.err.println("Error searching cars: " + e.getMessage());
+            }
+        }
+        private void loadPurchasedCars() throws SQLException
+        {
+            String sql = "SELECT car_id FROM purchases WHERE buyer_id = ?";
+            try (Connection conn = getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql))
+            {
+                pstmt.setInt(1, getUserId());
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next())
+                {
+                    purchasedCarIds.add(rs.getInt("car_id"));
+                }
+            }
+        }
+
+        public double getCarPrice(int carId) throws SQLException
+        {
+            return getCar(carId).getPrice();
+        }
+    }
+    public static class Admin extends User implements AdminInterface {
+        //private static boolean adminExists = false; // Ensure only one admin
+        public Admin(int userId, String username, String password,String phoneNo) {
+            super(userId, username, password, "admin",phoneNo);
+        }
+        public void manageUsers() {
+            System.out.println("Managing users...");
+            try (Connection conn = getConnection();
+                 PreparedStatement ps = conn.prepareStatement("DELETE FROM users WHERE user_id = ?")) {
+                displayAllCars();
+                System.out.print("Enter user ID to delete: ");
+                int id = scanner.nextInt();
+                scanner.nextLine();
+
+                ps.setInt(1, id);
+                int rows = ps.executeUpdate();
+
+                if (rows > 0) {
+                    System.out.println("User deleted successfully.");
+                } else {
+                    System.out.println("User not found.");
+                }
+            } catch (SQLException e) {
+                System.out.println("Error deleting user: " + e.getMessage());
+            }
+        }
+
+        public void manageCars() {
+            System.out.println("Managing cars...");
+            approveOrRejectCar(null, null);
+        }
+
+        public void approveCar(int carId) {
+            try {
+                approveCarInDatabase(carId);
+            } catch (SQLException e) {
+                System.err.println("Error approving car: " + e.getMessage());
+            }
+        }
+
+        public void rejectCar(int carId) {
+            try {
+                rejectCarInDatabase(carId);
+            } catch (SQLException e) {
+                System.err.println("Error rejecting car: " + e.getMessage());
+            }
+        }
+        public static boolean isValidAlphabeticString(String input)
+        {
+            return input != null && input.matches("^[a-zA-Z\\s]+$");
+        }
+        public static boolean verifyOtp()
         {
             Scanner scanner = new Scanner(System.in);
-            User currentUser = null;
-            while (true)
+            Random random = new Random();
+            int otp = 1000 + random.nextInt(9000); // 4-digit OTP
+            File F = new File("C:\\WheelsANDDeals\\OTP.txt");
+            String filePath = "C:\\WheelsANDDeals\\OTP.txt";
+            try (FileWriter writer = new FileWriter(filePath))
             {
-                if (currentUser == null)
-                {
-                    System.out.println("\nWelcome to Wheels and Deals!");
-                    System.out.println("1. Login");
-                    System.out.println("2. Register as Seller");
-                    System.out.println("3. Register as Buyer");
-                    if (!Admin.isAdminExists())
-                    {
-                        System.out.println("4. Register as Admin");
+                writer.write("Your OTP is: " + otp);
+            } catch (IOException e)
+            {
+                System.out.println("Error writing OTP to file: " + e.getMessage());
+            }
+            for (int attempts = 0; attempts < 3; attempts++)
+            {
+                System.out.println("Enter OTP:");
+                String input = scanner.nextLine();
+                try {
+                    int enteredOtp = Integer.parseInt(input.trim());
+                    if (enteredOtp == otp) {
+                        System.out.println("OTP verified successfully!");
+                        return true;
+                    } else {
+                        System.out.println("Incorrect OTP. You have " + (2 - attempts) + " attempts left.");
                     }
-                    System.out.println("0. Exit");
-                    System.out.print("Enter your choice: ");
-                    String choice = scanner.nextLine();
-                    try
+                } catch (NumberFormatException e)
+                {
+                    System.out.println("Invalid input. Please enter a 4-digit number.");
+                }
+            }
+            System.out.println("Maximum attempts reached. OTP verification failed.");
+            return false;
+        }
+        public static boolean isValidPassword(String password)
+        {
+            // Check length is exactly 8 characters
+            if (password.length() != 8) {
+                return false;
+            }
+            String specialChars = "@$!#";
+            boolean hasSpecialChar = false;
+            for (char c : password.toCharArray())
+            {
+                if (specialChars.indexOf(c) != -1)
+                {
+                    hasSpecialChar = true;
+                    break;
+                }
+            }
+            return hasSpecialChar;
+        }
+    }
+
+    interface SellerInterface
+    {
+        void addCar(Car car);
+        void updateCar(Car car);
+        void removeCar(int carId);
+    }
+    interface BuyerInterface {
+        void browseCars();
+        boolean buyCar(int carId, String paymentMethod);
+        void viewPurchasedCars();
+        void searchCars(String model, String company, Double maxPrice, String fuelType);
+    }
+    interface AdminInterface
+    {
+        void manageUsers();
+        void manageCars();
+    }
+    // Insert Car
+    public static void insertCar(Car car) throws SQLException
+    {
+        if (!Admin.isValidAlphabeticString(car.getCompany())) {
+            throw new IllegalArgumentException("Company name must contain only alphabetic characters");
+        }
+        if (!Admin.isValidAlphabeticString(car.getModel())) {
+            throw new IllegalArgumentException("Model name must contain only alphabetic characters");
+        }
+        String sql = "INSERT INTO cars ( company, model, year, description, reserve_price, seller_id, fuel_type, approved, sold) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        if (car.getYear() < 2015 || car.getYear() > 2025) {
+            throw new IllegalArgumentException("Car year must be between 2015 and 2025");
+        }
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setString(1, car.getCompany());
+            pstmt.setString(2, car.getModel());
+            pstmt.setInt(3, car.getYear());
+            pstmt.setString(4, car.getDescription());
+            pstmt.setDouble(5, car.getPrice());
+            pstmt.setInt(6, car.getSellerId());
+            pstmt.setString(7, car.getFuelType());
+            pstmt.setBoolean(8, car.isApproved());
+            pstmt.setBoolean(9, car.isSold());
+            pstmt.executeUpdate();
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int generatedId = generatedKeys.getInt(1);
+                    // You might want to update the car object with the generated ID
+                }
+            }
+            System.out.println("Car inserted successfully into the database.");
+        }
+    }
+    // Display car
+    public static void displayAllCars() throws SQLException {
+        String sql = "SELECT car_id, company, model, year, description, reserve_price, seller_id, fuel_type, approved, sold FROM cars WHERE sold = FALSE";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            boolean carFound = false;
+            System.out.println("------------------------------------------------------------");
+            System.out.println("ID | company | Model | Year | Description | Price | Fuel Type | Seller ID | Approved | Sold");
+            System.out.println("------------------------------------------------------------");
+            while (rs.next()) {
+                carFound = true;
+                int carId = rs.getInt("car_id");
+                String company = rs.getString("company");
+                String model = rs.getString("model");
+                int year = rs.getInt("year");
+                String description = rs.getString("description");
+                double price = rs.getDouble("reserve_price");
+                String fuelType = rs.getString("fuel_type");
+                int sellerId = rs.getInt("seller_id");
+                boolean approved = rs.getBoolean("approved");
+                boolean sold = rs.getBoolean("sold");
+                System.out.format("%d | %s | %s | %d | %s | %.2f | %s | %d | %s | %s\n",
+                        carId, company, model, year, description, price, fuelType, sellerId,
+                        approved ? "Yes" : "No", sold ? "Yes" : "No");
+            }
+            if (!carFound) {
+                System.out.println("Sorry, no cars available.");
+            }
+            System.out.println("------------------------------------------------------------");
+        }
+    }
+    // Get Car
+    public static Car getCar(int carId) throws SQLException {
+        String sql = "SELECT * FROM cars WHERE car_id = ?";
+        Car car = null;
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, carId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                car = new Car(
+                        rs.getInt("car_id"),
+                        rs.getString("company"),
+                        rs.getString("model"),
+                        rs.getInt("year"),
+                        rs.getString("description"),
+                        rs.getDouble("reserve_price"),
+                        rs.getInt("seller_id"),
+                        rs.getString("fuel_type"));
+                car.setApproved(rs.getBoolean("approved"));
+                car.setSold(rs.getBoolean("sold"));
+            }
+        }
+        return car;
+    }
+    // Update Car
+    public static void updateCarInDatabase(Car car) throws SQLException
+    {   if (!Admin.isValidAlphabeticString(car.getCompany()))
+    {
+        throw new IllegalArgumentException("Company name must contain only alphabetic characters");
+    }
+        if (!Admin.isValidAlphabeticString(car.getModel()))
+        {
+            throw new IllegalArgumentException("Model name must contain only alphabetic characters");
+        }
+        try {
+            int carId = getIntInput(scanner, "Enter Car ID to update: ");
+            car = getCar(carId);
+            if (car == null) {
+                System.out.println("Wrong ID. Car not found.");
+                return;
+            }
+            System.out.println("Current details: " + car);
+
+            String company = getStringInput(scanner, "Enter new company (" + car.getCompany() + "): ");
+            if (company.isEmpty()) company = car.getCompany();
+
+            String model = getStringInput(scanner, "Enter new model (" + car.getModel() + "): ");
+            if (model.isEmpty()) model = car.getModel();
+
+            int year = getIntInput(scanner, "Enter new year (" + car.getYear() + "): ");
+            if (year == 0) year = car.getYear();
+
+            String description = getStringInput(scanner, "Enter new description (" + car.getDescription() + "): ");
+            if (description.isEmpty()) description = car.getDescription();
+
+            double price = getDoubleInput(scanner, "Enter new price (" + car.getPrice() + "): ");
+            if (price == 0) price = car.getPrice();
+
+            String fuelType = getStringInput(scanner, "Enter new fuel type (" + car.getFuelType() + "): ");
+            if (fuelType.isEmpty()) fuelType = car.getFuelType();
+
+            Car updatedCar = new Car(carId, company, model, year, description, price, car.getSellerId(), fuelType);
+
+            // Update in DB
+            String sql = "UPDATE cars SET company = ?, model = ?, year = ?, description = ?, reserve_price = ?, fuel_type = ? WHERE car_id = ?";
+            try (Connection conn = getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, updatedCar.getCompany());
+                pstmt.setString(2, updatedCar.getModel());
+                pstmt.setInt(3, updatedCar.getYear());
+                pstmt.setString(4, updatedCar.getDescription());
+                pstmt.setDouble(5, updatedCar.getPrice());
+                pstmt.setString(6, updatedCar.getFuelType());
+                pstmt.setInt(7, updatedCar.getCarId());
+                int rows = pstmt.executeUpdate();
+                if (rows > 0) {
+                    System.out.println("Car details updated successfully.");
+                } else {
+                    System.out.println("Update failed.");
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error updating car: " + e.getMessage());
+        }
+    }
+    // Delete Car
+    public static void deleteCar(int carId) throws SQLException
+    {
+        String sql = "DELETE FROM cars WHERE car_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setInt(1, carId);
+            pstmt.executeUpdate();
+            System.out.println("Car deleted successfully from the database.");
+        }
+    }
+    // Approve Car
+    public static void approveCarInDatabase(int carId) throws SQLException
+    {
+        Connection conn = null;
+        try
+        {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+
+            String sql = "UPDATE cars SET approved = TRUE WHERE car_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql))
+            {
+                pstmt.setInt(1, carId);
+                int rowsAffected = pstmt.executeUpdate();
+
+                if (rowsAffected > 0)
+                {
+                    conn.commit();
+                    System.out.println("Car approved successfully.");
+                }
+                else
+                {
+                    conn.rollback();
+                    System.out.println("Car not found. Approval failed.");
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            if (conn != null)
+            {
+                conn.rollback();
+            }
+            throw e; // Re-throw the exception
+        }
+        finally
+        {
+            if (conn != null)
+            {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        }
+    }
+    // Reject Car
+    public static void rejectCarInDatabase(int carId) throws SQLException
+    {
+        Connection conn = null;
+        try
+        {
+            conn = getConnection();
+            conn.setAutoCommit(false); // Start transaction
+
+            String sql = "UPDATE cars SET approved = FALSE WHERE car_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql))
+            {
+                pstmt.setInt(1, carId);
+                int rowsAffected = pstmt.executeUpdate();
+
+                if (rowsAffected > 0)
+                {
+                    // Additional logic if needed
+                    conn.commit(); // Commit the transaction
+                    System.out.println("Car rejected successfully.");
+                }
+                else
+                {
+                    conn.rollback(); // Rollback if no rows affected
+                    System.out.println("Car not found. Rejection failed.");
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            if (conn != null)
+            {
+                conn.rollback(); // Rollback on error
+            }
+            throw e; // Re-throw the exception
+        }
+        finally
+        {
+            if (conn != null)
+            {
+                conn.setAutoCommit(true); // Reset auto-commit
+                conn.close();
+            }
+        }
+    }
+    // Purchase Car
+    public static void purchaseCar(int carId, int buyerId) throws SQLException
+    {
+        String sql = "UPDATE cars SET sold = TRUE WHERE car_id = ? AND approved = TRUE AND sold = FALSE";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setInt(1, carId);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0)
+            {
+                System.out.println("Car purchased successfully.");
+                // Optionally, record the purchase in a separate table
+                recordPurchase(carId, buyerId);
+            }
+            else
+            {
+                System.out.println("Car purchase failed. It may be already sold, not approved, or does not exist.");
+            }
+        }
+    }
+    // Record Purchase
+    public static void recordPurchase(int carId, int buyerId) throws SQLException
+    {
+        String sql = "INSERT INTO purchases (car_id, buyer_id, purchase_date) VALUES (?, ?, NOW())";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setInt(1, carId);
+            pstmt.setInt(2, buyerId);
+            pstmt.executeUpdate();
+            System.out.println("Purchase recorded successfully.");
+        }
+    }
+    // Generate Invoice
+    public static void generateInvoice(int carId, int buyerId) {
+        try {
+            // Fetch car details
+            Car car = getCar(carId);
+            System.out.println("Generating invoice for Car ID: " + carId + " and Buyer ID: " + buyerId);
+            if (car == null) {
+                System.out.println("Car not found for invoice generation.");
+                return;
+            }
+
+            // Fetch buyer details
+            String buyerName = "";
+            String buyerPhone = "";
+            try (Connection conn = getConnection();
+                 PreparedStatement ps = conn.prepareStatement("SELECT username, phone_no FROM users WHERE user_id = ?")) {
+                ps.setInt(1, buyerId);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    buyerName = rs.getString("username");
+                    buyerPhone = rs.getString("phone_no");
+                }
+            }
+
+            // Fetch seller details
+            String sellerName = "";
+            String sellerPhone = "";
+            try (Connection conn = getConnection();
+                 PreparedStatement ps = conn.prepareStatement("SELECT username, phone_no FROM users WHERE user_id = ?")) {
+                ps.setInt(1, car.getSellerId());
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    sellerName = rs.getString("username");
+                    sellerPhone = rs.getString("phone_no");
+                }
+            }
+
+            // Prepare invoice content
+            String invoice = "----- Invoice -----\n"
+                    + "Date: " + new java.util.Date() + "\n"
+                    + "Car ID: " + car.getCarId() + "\n"
+                    + "Company: " + car.getCompany() + "\n"
+                    + "Model: " + car.getModel() + "\n"
+                    + "Year: " + car.getYear() + "\n"
+                    + "Description: " + car.getDescription() + "\n"
+                    + "Price: " + car.getPrice() + "\n"
+                    + "Fuel Type: " + car.getFuelType() + "\n"
+                    + "Seller ID: " + car.getSellerId() + "\n"
+                    + "Seller Name: " + sellerName + "\n"
+                    + "Seller Phone: " + sellerPhone + "\n"
+                    + "Buyer ID: " + buyerId + "\n"
+                    + "Buyer Name: " + buyerName + "\n"
+                    + "Buyer Phone: " + buyerPhone + "\n"
+                    + "-------------------\n";
+
+            // Print to console
+            System.out.println(invoice);
+
+            // Write to file
+            String dirPath = "C:\\WheelsANDDeals";
+            new File(dirPath).mkdirs();
+            String filePath = dirPath + "\\Invoice_" + carId + "_" + buyerId + ".txt";
+            try (FileWriter writer = new FileWriter(filePath)) {
+                writer.write(invoice);
+            }
+
+            // Store invoice in purchases table as CLOB
+            try (Connection conn = getConnection();
+                 PreparedStatement ps = conn.prepareStatement(
+                         "UPDATE purchases SET invoice = ? WHERE car_id = ? AND buyer_id = ?")) {
+                ps.setString(1, invoice); // For MySQL, setString works for LONGTEXT/CLOB
+                ps.setInt(2, carId);
+                ps.setInt(3, buyerId);
+                ps.executeUpdate();
+            }
+
+            System.out.println("Invoice saved to: " + filePath + " and uploaded to database.");
+        } catch (Exception e) {
+            System.out.println("Error generating invoice: " + e.getMessage());
+        }
+    }
+    // Display Purchased Cars
+    // Display Purchased Cars
+    public static void displayPurchasedCars(int buyerId) throws SQLException
+    {
+        String sql = "SELECT c.* FROM cars c INNER JOIN purchases p ON c.car_id = p.car_id WHERE p.buyer_id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setInt(1, buyerId);
+            ResultSet rs = pstmt.executeQuery();
+
+            boolean hasPurchases = false;
+            System.out.println("Purchased Cars:");
+            while (rs.next()) {
+                hasPurchases = true;
+                System.out.println("Car ID: " + rs.getInt("car_id") +
+                        ", Company: " + rs.getString("company") +
+                        ", Model: " + rs.getString("model") +
+                        ", Year: " + rs.getString("year") +
+                        ", Description: " + rs.getString("description") +
+                        ", Price: " + rs.getDouble("reserve_price"));
+            }
+
+            if (!hasPurchases) {
+                System.out.println("You haven't purchased any cars yet.");
+            }
+        }
+    }
+    // Insert User
+    public static void insertUser(User user) throws SQLException {
+        String sql = "INSERT INTO users ( username, password, role,phone_no) VALUES ( ?, ?, ?, ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS)) {
+            pstmt.setString(1, user.getUsername());
+            pstmt.setString(2, user.getPassword());
+            pstmt.setString(3, user.getRole());
+            pstmt.setString(4, user.getPhoneNo());
+            pstmt.executeUpdate();
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    int generatedId = generatedKeys.getInt(1);
+                }
+            }
+            System.out.println("User inserted successfully into the database.");
+        }
+    }
+    // Display Available Cars
+    public static void displayAvailableCars() throws SQLException {
+        String sql = "SELECT car_id, company, model, year, description, reserve_price, fuel_type, seller_id FROM cars WHERE approved = TRUE AND sold = FALSE";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            System.out.format("%-5s %-12s %-15s %-6s %-25s %-10s %-10s %-10s%n",
+                    "ID", "Company", "Model", "Year", "Description", "Price", "Fuel", "SellerID");
+            System.out.println("---------------------------------------------------------------------------------------------");
+
+            while (rs.next()) {
+                System.out.format("%-5d %-12s %-15s %-6d %-25s %-10.2f %-10s %-10d%n",
+                        rs.getInt("car_id"),
+                        rs.getString("company"),
+                        rs.getString("model"),
+                        rs.getInt("year"),
+                        rs.getString("description"),
+                        rs.getDouble("reserve_price"),
+                        rs.getString("fuel_type"),
+                        rs.getInt("seller_id"));
+            }
+        }
+    }
+    // Search and Display Cars
+    public static void searchAndDisplayCars(String model, String company, Double maxPrice, String fuelType) throws SQLException {
+        String sql = "SELECT * FROM cars WHERE approved = TRUE AND sold = FALSE";
+        StringBuilder conditions = new StringBuilder();
+
+        if (model != null && !model.isEmpty()) {
+            conditions.append(" AND model LIKE '%").append(model).append("%'");
+        }
+        if (company != null && !company.isEmpty()) {
+            conditions.append(" AND company LIKE '%").append(company).append("%'");
+        }
+        if (maxPrice != null) {
+            conditions.append(" AND reserve_price <= ").append(maxPrice);
+        }
+        if (fuelType != null && !fuelType.isEmpty()) {
+            conditions.append(" AND fuel_type = '").append(fuelType).append("'");
+        }
+
+        if (conditions.length() > 0) {
+            sql += conditions.toString();
+        }
+
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            System.out.println("Search Results:");
+            boolean found = false;
+            while (rs.next()) {
+                found = true;
+                System.out.println("Car ID: " + rs.getInt("car_id") +
+                        ", Company: " + rs.getString("company") +
+                        ", Model: " + rs.getString("model") +
+                        ", Year: " + rs.getString("year") +
+                        ", Description: " + rs.getString("description") +
+                        ", Price: " + rs.getDouble("reserve_price") +
+                        ", Fuel Type: " + rs.getString("fuel_type"));
+            }
+            if (!found) {
+                System.out.println("No cars found matching your criteria.");
+            }
+        }
+    }
+    // method for payment processing
+    public static boolean processPayment(String paymentMethod, double amount) throws InterruptedException
+    {
+        if (paymentMethod.equalsIgnoreCase("card"))
+        {
+            sleep(1000);
+            System.out.println("Simulating card payment of ₹" + amount);
+            return true;
+        }
+        else if (paymentMethod.equalsIgnoreCase("cheque"))
+        {
+            sleep(1000);
+            System.out.println("Simulating cheque payment of ₹" + amount);
+            return true;
+        }
+        else if (paymentMethod.equalsIgnoreCase("online via bank"))
+        {
+            sleep(1000);
+            System.out.println("Simulating online payment of ₹" + amount);
+            return true;
+        }
+        else
+        {
+            sleep(1000);
+            System.out.println("Unsupported payment method.");
+            return false;
+        }
+    }
+    // Helper methods for getting input with error handling
+    public static int getIntInput(Scanner scanner, String prompt)
+    {
+        while (true)
+        {
+            try
+            {
+                System.out.print(prompt);
+                return scanner.nextInt();
+            }
+            catch (InputMismatchException e)
+            {
+                System.out.println("Invalid input. Please enter an integer.");
+                scanner.next();
+            }
+        }
+    }
+    public static double getDoubleInput(Scanner scanner, String prompt)
+    {
+        while (true)
+        {
+            try
+            {
+                System.out.print(prompt);
+                return scanner.nextDouble();
+            }
+            catch (InputMismatchException e)
+            {
+                System.out.println("Invalid input. Please enter a number.");
+                scanner.next();
+            }
+        }
+    }
+    public static String getStringInput(Scanner scanner, String prompt)
+    {
+        System.out.print(prompt);
+        return scanner.nextLine();
+    }
+    // Check if user exists
+    public static User checkUser(String username, String password) throws SQLException
+    {
+        if (!isValidUsername(username)) {
+            System.out.println("Invalid username format! Username must contain only letters.");
+            return null;
+        }
+        if (!Admin.isValidPassword(password)) {
+            System.out.println("Invalid password format!");
+            return null;
+        }
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
+        {
+            pstmt.setString(1, username);
+            pstmt.setString(2, password);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next())
+            {
+                int userId = rs.getInt("user_id");
+                String role = rs.getString("role");
+                String phoneNo = rs.getString("phone_no");
+                switch (role)
+                {
+                    case "admin":
+                        return new Admin(userId, username, password,phoneNo);
+                    case "seller":
+                        return new Seller(userId, username, password,phoneNo);
+                    case "buyer":
+                        return new Buyer(userId, username, password,phoneNo);
+                }
+            }
+        }
+        return null;
+    }
+    //admin exist or not
+    public static boolean adminExistsInDatabase() throws SQLException {
+        String sql = "SELECT COUNT(*) FROM users WHERE role = 'admin'";
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        }
+        return false;
+    }
+    //for username validation
+    public static boolean isValidUsername(String username)
+    {
+        // Check if username contains only letters (no numbers or special characters)
+        return username.matches("^[a-zA-Z]+$");
+    }
+    //for phone no validation
+    public static boolean isValidPhoneNumber(String phoneNo)
+    {
+        // Check if phone number is exactly 10 digits and contains only numbers
+        return phoneNo != null && phoneNo.matches("\\d{10}");
+    }
+    // Register new user
+    public static User registerUser(Scanner scanner, String role) {
+        System.out.println(role.substring(0, 1).toUpperCase() + role.substring(1) + " Registration:");
+        String phoneNo;
+        while (true) {
+            phoneNo = getStringInput(scanner, "Enter Phone Number (10 digits only): ");
+            if (isValidPhoneNumber(phoneNo)) {
+                break;
+            } else {
+                System.out.println("Invalid phone number! Phone number must be exactly 10 digits and contain only numbers.");
+            }
+        }
+        String username;
+        while (true) {
+            username = getStringInput(scanner, "Enter Username (letters only, no special characters or numbers): ");
+            if (isValidUsername(username)) {
+                break;
+            } else {
+                System.out.println("Invalid username! Username must contain only letters (a-z, A-Z).");
+            }
+        }
+        String password;
+        while (true) {
+            password = getStringInput(scanner, "Enter Password (exactly 8 characters with one of @$!#): ");
+            if (Admin.isValidPassword(password)) {
+                break;
+            } else {
+                System.out.println("Invalid password! Password must be exactly 8 characters long and contain at least one of these special characters: @$!#");
+            }
+        }
+        User newUser = null;
+
+        try {
+            // Check if admin already exists in database
+            if (role.equals("admin") && adminExistsInDatabase()) {
+                System.out.println("An admin account already exists. Only one admin is allowed.");
+                return null;
+            }
+
+            switch (role) {
+                case "admin":
+                    newUser = new Admin(0, username, password,phoneNo);
+                    break;
+                case "seller":
+                    newUser = new Seller(0, username, password,phoneNo);
+                    break;
+                case "buyer":
+                    newUser = new Buyer(0, username, password,phoneNo);
+                    break;
+                default:
+                    System.out.println("Invalid role.");
+                    return null;
+            }
+            insertUser(newUser);
+            System.out.println("Registration successful!");
+        } catch (SQLException e) {
+            System.err.println("Error registering user: " + e.getMessage());
+            return null;
+        }
+        return newUser;
+    }
+    public static void displayApprovedCars() throws SQLException {
+        String sql = "SELECT car_id, company, model, year, description, reserve_price, fuel_type, seller_id FROM cars WHERE approved = TRUE AND sold = FALSE";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            System.out.format("%-5s %-12s %-15s %-6s %-25s %-10s %-10s %-10s%n",
+                    "ID", "Company", "Model", "Year", "Description", "Price", "Fuel", "SellerID");
+            System.out.println("---------------------------------------------------------------------------------------------");
+
+            boolean found = false;
+            while (rs.next()) {
+                found = true;
+                System.out.format("%-5d %-12s %-15s %-6d %-25s %-10.2f %-10s %-10d%n",
+                        rs.getInt("car_id"),
+                        rs.getString("company"),
+                        rs.getString("model"),
+                        rs.getInt("year"),
+                        rs.getString("description"),
+                        rs.getDouble("reserve_price"),
+                        rs.getString("fuel_type"),
+                        rs.getInt("seller_id"));
+            }
+            if (!found) {
+                System.out.println("No approved cars available.");
+            }
+        }
+    }
+    public static void displayRejectedCars() throws SQLException {
+        String sql = "SELECT car_id, company, model, year, description, reserve_price, fuel_type, seller_id FROM cars WHERE approved = FALSE AND sold = FALSE";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            System.out.format("%-5s %-12s %-15s %-6s %-25s %-10s %-10s %-10s%n",
+                    "ID", "Company", "Model", "Year", "Description", "Price", "Fuel", "SellerID");
+            System.out.println("---------------------------------------------------------------------------------------------");
+
+            boolean found = false;
+            while (rs.next()) {
+                found = true;
+                System.out.format("%-5d %-12s %-15s %-6d %-25s %-10.2f %-10s %-10d%n",
+                        rs.getInt("car_id"),
+                        rs.getString("company"),
+                        rs.getString("model"),
+                        rs.getInt("year"),
+                        rs.getString("description"),
+                        rs.getDouble("reserve_price"),
+                        rs.getString("fuel_type"),
+                        rs.getInt("seller_id"));
+            }
+            if (!found) {
+                System.out.println("No approved cars available.");
+            }
+        }
+    }
+    // Admin Approval/Rejection with car list
+    public static void approveOrRejectCar(Admin admin, Scanner scanner)
+    {
+        try {
+            List<Car> pendingCars = getPendingCars();
+            if (pendingCars.isEmpty())
+            {
+                System.out.println("No cars pending approval.");
+                return;
+            }
+            System.out.println("Pending Cars for Approval:");
+            for (Car car : pendingCars)
+            {
+                System.out.println(car.toString());
+            }
+            int carId = getIntInput(scanner, "Enter Car ID to approve/reject: ");
+            scanner.nextLine(); // Consume newline
+            System.out.print("Approve (a) or Reject (r)? ");
+            String choice = scanner.nextLine();
+            if (choice.equalsIgnoreCase("a"))
+            {
+                admin.approveCar(carId);
+            }
+            else if (choice.equalsIgnoreCase("r"))
+            {
+                admin.rejectCar(carId);
+            }
+            else
+            {
+                System.out.println("Invalid choice.");
+            }
+        }
+        catch (SQLException e)
+        {
+            System.err.println("Error approving/rejecting car: " + e.getMessage());
+        }
+    }
+    public static void printAdminReport() {
+        try (Connection conn = getConnection()) {
+            // User counts
+            int adminCount = 0, sellerCount = 0, buyerCount = 0;
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT role, COUNT(*) as count FROM users GROUP BY role")) {
+                while (rs.next()) {
+                    String role = rs.getString("role");
+                    int count = rs.getInt("count");
+                    switch (role) {
+                        case "admin": adminCount = count; break;
+                        case "seller": sellerCount = count; break;
+                        case "buyer": buyerCount = count; break;
+                    }
+                }
+            }
+
+            // Car counts
+            int totalCars = 0, approvedCars = 0, pendingCars = 0, soldCars = 0;
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as total, SUM(approved=TRUE) as approved, SUM(approved=FALSE) as pending, SUM(sold=TRUE) as sold FROM cars")) {
+                if (rs.next()) {
+                    totalCars = rs.getInt("total");
+                    approvedCars = rs.getInt("approved");
+                    pendingCars = rs.getInt("pending");
+                    soldCars = rs.getInt("sold");
+                }
+            }
+
+            // Purchase count
+            int totalPurchases = 0;
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT COUNT(*) as total FROM purchases")) {
+                if (rs.next()) {
+                    totalPurchases = rs.getInt("total");
+                }
+            }
+
+            // Print report
+            System.out.println("----- Admin Report -----");
+            System.out.println("Users:");
+            System.out.println("  Admins:  " + adminCount);
+            System.out.println("  Sellers: " + sellerCount);
+            System.out.println("  Buyers:  " + buyerCount);
+            System.out.println("Cars:");
+            System.out.println("  Total:     " + totalCars);
+            System.out.println("  Approved:  " + approvedCars);
+            System.out.println("  Pending:   " + pendingCars);
+            System.out.println("  Sold:      " + soldCars);
+            System.out.println("Purchases:");
+            System.out.println("  Total:     " + totalPurchases);
+            System.out.println("------------------------");
+        } catch (SQLException e) {
+            System.out.println("Error generating admin report: " + e.getMessage());
+        }
+    }
+    // Get pending cars
+    public static List<Car> getPendingCars() throws SQLException {
+        String sql = "SELECT * FROM cars WHERE approved = FALSE";
+        List<Car> pendingCars = new ArrayList<>();
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                Car car = new Car(
+                        rs.getInt("car_id"),
+                        rs.getString("company"),
+                        rs.getString("model"),
+                        rs.getInt("year"),
+                        rs.getString("description"),
+                        rs.getDouble("reserve_price"),
+                        rs.getInt("seller_id"),
+                        rs.getString("fuel_type"));
+                car.setApproved(rs.getBoolean("approved"));
+                pendingCars.add(car);
+            }
+        }
+        return pendingCars;
+    }
+    // Simplified Car Listing Input
+    public static Car getCarInput(Scanner scanner, int sellerId) {
+        // --- Company -> Models Mapping ---
+        Map<String, List<String>> COMPANY_MODELS = new HashMap<>();
+        COMPANY_MODELS.put("Maruti", Arrays.asList(
+                "Swift", "Baleno", "Brezza", "Dzire", "Ertiga", "Celerio", "Alto", "WagonR", "XL6", "Ignis"));
+        COMPANY_MODELS.put("Tata", Arrays.asList(
+                "Nexon", "Harrier", "Safari", "Altroz", "Punch", "Tiago", "Tigor", "Zest", "Hexa", "Indica"));
+        COMPANY_MODELS.put("Hyundai", Arrays.asList(
+                "i10", "i20", "Creta", "Verna", "Venue", "Tucson", "Aura", "Alcazar", "Elantra", "Santa Fe"));
+        COMPANY_MODELS.put("Mahindra", Arrays.asList(
+                "XUV700", "XUV500", "Thar", "Scorpio", "Scorpio-N", "Bolero", "KUV100", "Marazzo", "TUV300", "Xylo"));
+        COMPANY_MODELS.put("Honda", Arrays.asList(
+                "City", "Amaze", "Jazz", "WR-V", "Civic", "Accord", "BR-V", "CR-V", "Mobilio", "Brio"));
+        COMPANY_MODELS.put("Toyota", Arrays.asList(
+                "Fortuner", "Innova Crysta", "Innova Hycross", "Glanza", "Urban Cruiser", "Camry",
+                "Corolla", "Etios", "Yaris", "Hilux"));
+        COMPANY_MODELS.put("Kia", Arrays.asList(
+                "Seltos", "Sonet", "Carens", "Carnival", "EV6", "Stinger", "Sportage", "Sorento", "Picanto", "Telluride"));
+        COMPANY_MODELS.put("BMW", Arrays.asList(
+                "X1", "X3", "X5", "X7", "3 Series", "5 Series", "7 Series", "i4", "iX", "M4"));
+        COMPANY_MODELS.put("Mercedes", Arrays.asList(
+                "A-Class", "C-Class", "E-Class", "S-Class", "GLA", "GLC", "GLE", "GLS", "Maybach", "AMG GT"));
+        COMPANY_MODELS.put("Audi", Arrays.asList(
+                "A3", "A4", "A6", "A8", "Q3", "Q5", "Q7", "Q8", "e-tron", "RS7"));
+        COMPANY_MODELS.put("Jaguar", Arrays.asList(
+                "XE", "XF", "XJ", "F-Pace", "E-Pace", "I-Pace", "F-Type", "XK", "S-Type", "X-Type"));
+        COMPANY_MODELS.put("Ford", Arrays.asList(
+                "EcoSport", "Endeavour", "Figo", "Aspire", "Mustang", "Fiesta", "Fusion", "Mondeo", "Focus", "Ranger"));
+        COMPANY_MODELS.put("Volkswagen", Arrays.asList(
+                "Polo", "Vento", "Taigun", "Tiguan", "Virtus", "Passat", "Jetta", "Beetle", "Touareg", "Golf"));
+        COMPANY_MODELS.put("Skoda", Arrays.asList(
+                "Slavia", "Kushaq", "Superb", "Octavia", "Kodiaq", "Rapid", "Fabia", "Scala", "Kamiq", "Enyaq"));
+        COMPANY_MODELS.put("Nissan", Arrays.asList(
+                "Magnite", "Kicks", "Sunny", "X-Trail", "Terrano", "Micra", "Evalia", "Teana", "Juke", "GT-R"));
+        COMPANY_MODELS.put("Renault", Arrays.asList(
+                "Kwid", "Triber", "Kiger", "Duster", "Captur", "Lodgy", "Scala", "Fluence", "Pulse", "Clio"));
+        COMPANY_MODELS.put("MG", Arrays.asList(
+                "Hector", "Astor", "ZS EV", "Gloster", "Comet EV", "MG6", "MG5", "MG HS", "Marvel R", "Cyberster"));
+        COMPANY_MODELS.put("Jeep", Arrays.asList(
+                "Compass", "Meridian", "Wrangler", "Grand Cherokee", "Renegade", "Patriot", "Commander", "Cherokee", "Gladiator", "Wagoneer"));
+        // Company Selection (case-insensitive)
+        String company = null;
+        while (true) {
+            System.out.println("Available Companies: " + COMPANY_MODELS.keySet());
+            System.out.print("Enter Company: ");
+            String inputCompany = scanner.nextLine().trim();
+
+            for (String c : COMPANY_MODELS.keySet()) {
+                if (c.equalsIgnoreCase(inputCompany)) {
+                    company = c; // store original case from map
+                    break;
+                }
+            }
+            if (company != null) break;
+            System.out.println("Invalid company. Please enter from the list above.");
+        }
+
+        // Model Selection (case-insensitive)
+        String model = null;
+        while (true) {
+            System.out.println("Available Models for " + company + ": " + COMPANY_MODELS.get(company));
+            System.out.print("Enter Model: ");
+            String inputModel = scanner.nextLine().trim();
+
+            for (String m : COMPANY_MODELS.get(company)) {
+                if (m.equalsIgnoreCase(inputModel)) {
+                    model = m; // store original case from list
+                    break;
+                }
+            }
+            if (model != null) break;
+            System.out.println("Invalid model. Please choose from the above list.");
+        }
+
+        // Year Validation
+        int year;
+        while (true) {
+            year = getIntInput(scanner, "Year (2015-2025): ");
+            scanner.nextLine();
+            if (year >= 2015 && year <= 2025) break;
+            System.out.println("Invalid year. Please enter between 2015 and 2025.");
+        }
+
+        String description = getStringInput(scanner, "Description: ");
+        double reservePrice = getDoubleInput(scanner, "Price: ");
+        scanner.nextLine();
+
+        // Fuel Type Validation (case-insensitive)
+        System.out.println("Available fuel types: Petrol, Diesel, Electric, Hybrid, CNG");
+        String fuelType;
+        while (true) {
+            System.out.print("Fuel Type (Petrol/Diesel/Electric/Hybrid/CNG): ");
+            fuelType = scanner.nextLine().trim();
+            if (fuelType.equalsIgnoreCase("Petrol") ||
+                    fuelType.equalsIgnoreCase("Diesel") ||
+                    fuelType.equalsIgnoreCase("Electric") ||
+                    fuelType.equalsIgnoreCase("Hybrid") ||
+                    fuelType.equalsIgnoreCase("CNG")) {
+                break;
+            } else {
+                System.out.println("Invalid fuel type. Please enter a valid option.");
+            }
+        }
+
+        return new Car(0, company, model, year, description, reservePrice, sellerId, fuelType);
+    }
+    public static void main(String[] args) throws SQLException, InterruptedException {
+        Scanner scanner = new Scanner(System.in);
+        User currentUser = null;
+        while (true)
+        {
+            if (currentUser == null)
+            {
+                System.out.println("\nWelcome to Wheels and Deals!");
+                System.out.println("1. Login");
+                System.out.println("2. Register as Seller");
+                System.out.println("3. Register as Buyer");
+                boolean adminExists = adminExistsInDatabase();
+                if (adminExists) {
+                    System.out.println("4. Register as Admin");
+                }
+                System.out.println("0. Exit");
+                System.out.print("Enter your choice: ");
+                String choice = scanner.nextLine();
+                try
+                {
+                    switch (choice)
                     {
-                        switch (choice)
-                        {
-                            case "1":
-                                System.out.print("Enter Username: ");
-                                String username = scanner.nextLine();
-                                System.out.print("Enter Password: ");
-                                String password = scanner.nextLine();
+                        case "1":
+                            System.out.print("Enter Username: ");
+                            String username = scanner.nextLine();
+                            System.out.print("Enter Password: ");
+                            String password = scanner.nextLine();
+                            if (Admin.verifyOtp())
+                            {
                                 currentUser = checkUser(username, password);
                                 if (currentUser == null)
                                 {
@@ -907,344 +1427,391 @@ import static java.lang.Thread.sleep;
                                 {
                                     System.out.println("Login successful!");
                                 }
+                            }
+                            else
+                            {
+                                System.out.println("Try Again");
                                 break;
-                            case "2":
-                                registerUser(scanner, "seller");
-                                break;
-                            case "3":
-                                registerUser(scanner, "buyer");
-                                break;
-                            case "4":
-                                if (!Admin.isAdminExists())
-                                {
-                                    registerUser(scanner, "admin");
+                            }
+                            break;
+                        case "2":
+                            registerUser(scanner, "seller");
+                            break;
+                        case "3":
+                            registerUser(scanner, "buyer");
+                            break;
+                        case "4":
+                            if (!adminExists) {
+                                registerUser(scanner, "admin");
+                            } else {
+                                System.out.println("An admin account already exists. Only one admin is allowed.");
+                            }
+                            break;
+                        case "0":
+                            System.out.println("Exiting...");
+                            return;
+                        default:
+                            System.out.println("Invalid choice. Please try again.");
+                    }
+                }
+                catch (SQLException e)
+                {
+                    System.err.println("An unexpected error occurred: " + e.getMessage());
+                }
+            }
+            else
+            {
+                // User is logged in
+                System.out.println("\nWelcome, " + currentUser.getUsername() + "!");
+                if (currentUser instanceof Admin)
+                {
+                    System.out.println("1. Manage Cars (Approve/Reject)");
+                    System.out.println("2. Manage Users");
+                    System.out.println("3. View Approved Cars");
+                    System.out.println("4. View Rejected Cars");
+                    System.out.println("5. View Report");
+                    System.out.println("0. Logout");
+                    System.out.print("Enter your choice: ");
+                    String choice = scanner.nextLine();
+                    switch (choice)
+                    {
+                        case "1":
+                            approveOrRejectCar((Admin) currentUser, scanner);
+                            break;
+                        case "2":
+                            ((Admin) currentUser).manageUsers();
+                            break;
+                        case "3":
+                            displayApprovedCars();
+                            break;
+                        case "4":
+                            displayRejectedCars();
+                            break;
+                        case "5":
+                            printAdminReport();
+                            break;
+                        case "0":
+                            currentUser = null;
+                            System.out.println("Logged out.");
+                            break;
+                        default:
+                            System.out.println("Invalid choice. Please try again.");
+                    }
+                }
+                else if (currentUser instanceof Seller)
+                {
+                    System.out.println("1. Add a Car");
+                    System.out.println("2. Update a Car");
+                    System.out.println("3. Remove a Car");
+                    System.out.println("4. Display all cars");
+                    System.out.println("5. View Report");
+                    System.out.println("0. Logout");
+                    System.out.print("Enter your choice: ");
+                    String choice = scanner.nextLine();
+                    switch (choice)
+                    {
+                        case "1":
+                            Car car = getCarInput(scanner, currentUser.getUserId());
+                            ((Seller) currentUser).addCar(car);
+                            break;
+                        case "2":
+                            Car carUpdate = getCarInput(scanner, currentUser.getUserId());
+                            ((Seller) currentUser).updateCar(carUpdate);
+                            break;
+                        case "3":
+                            displayAllCars();
+                            int carId = getIntInput(scanner, "Enter Car ID to remove: ");
+                            scanner.nextLine();
+                            ((Seller) currentUser).removeCar(carId);
+                            break;
+                        case "4":
+                            displayAllCars();
+                            break;
+                        case "5":
+
+                        case "0":
+                            currentUser = null;
+                            System.out.println("Logged out.");
+                            break;
+                        default:
+                            System.out.println("Invalid choice. Please try again.");
+                    }
+                }
+                else if (currentUser instanceof Buyer)
+                {
+                    System.out.println("1. Browse Cars");
+                    System.out.println("2. Buy a Car");
+                    System.out.println("3. View Purchased Cars");
+                    System.out.println("4. Search Cars");
+                    System.out.println("0. Logout");
+                    System.out.print("Enter your choice: ");
+                    String choice = scanner.nextLine();
+                    switch (choice)
+                    {
+                        case "1":
+                            ((Buyer) currentUser).browseCars();
+                            break;
+                        case "2":
+                            displayAvailableCars();
+                            int carId = getIntInput(scanner, "Enter Car ID to buy: ");
+                            scanner.nextLine();
+                            System.out.println("Choose payment method: Card or Cheque");
+                            String paymentMethod = scanner.nextLine();
+                            if (((Buyer) currentUser).buyCar(carId, paymentMethod))
+                            {
+                                // Payment and purchase successful, now generate invoice
+                                System.out.println(carId+"-"+currentUser.getUserId());
+                                generateInvoice(carId, currentUser.getUserId());
+                            } else {
+                                System.out.println("Car purchase failed. Please try again.");
+                            }
+                            break;
+                        case "3":
+                            ((Buyer) currentUser).viewPurchasedCars();
+                            break;
+                        case "4":
+                            System.out.print("Enter model to search for (or leave blank): ");
+                            String model = scanner.nextLine();
+                            System.out.print("Enter company to search for (or leave blank): ");
+                            String company = scanner.nextLine();
+                            Double maxPrice = null;
+                            System.out.print("Enter maximum price (or leave blank): ");
+                            String maxPriceStr = scanner.nextLine();
+                            if (!maxPriceStr.isEmpty()) {
+                                try {
+                                    maxPrice = Double.parseDouble(maxPriceStr);
+                                } catch (NumberFormatException e) {
+                                    System.out.println("Invalid price format. Searching without price limit.");
                                 }
-                                else
-                                {
-                                    System.out.println("An admin account already exists.");
-                                }
-                                break;
-                            case "0":
-                                System.out.println("Exiting...");
-                                return;
-                            default:
-                                System.out.println("Invalid choice. Please try again.");
-                        }
-                    }
-                    catch (SQLException e)
-                    {
-                        System.err.println("An unexpected error occurred: " + e.getMessage());
+                            }
+                            System.out.print("Enter fuel type (Petrol/Diesel/Electric/Hybrid/CNG, or leave blank): ");
+                            String fuelType = scanner.nextLine();
+                            ((Buyer) currentUser).searchCars(model, company, maxPrice, fuelType);
+                            break;
+                        case "0":
+                            currentUser = null;
+                            System.out.println("Logged out.");
+                            break;
+                        default:
+                            System.out.println("Invalid choice. Please try again.");
                     }
                 }
-                else
-                {
-                    // User is logged in
-                    System.out.println("\nWelcome, " + currentUser.getUsername() + "!");
-                    if (currentUser instanceof Admin)
-                    {
-                        System.out.println("1. Manage Cars (Approve/Reject)");
-                        System.out.println("2. Manage Users");
-                        System.out.println("0. Logout");
-                        System.out.print("Enter your choice: ");
-                        String choice = scanner.nextLine();
-                        switch (choice)
-                        {
-                            case "1":
-                                approveOrRejectCar((Admin) currentUser, scanner);
-                                break;
-                            case "2":
-                                ((Admin) currentUser).manageUsers();
-                                break;
-                            case "0":
-                                currentUser = null;
-                                System.out.println("Logged out.");
-                                break;
-                            default:
-                                System.out.println("Invalid choice. Please try again.");
-                        }
-                    }
-                    else if (currentUser instanceof Seller)
-                    {
-                        System.out.println("1. Add a Car");
-                        System.out.println("2. Update a Car");
-                        System.out.println("3. Remove a Car");
-                        System.out.println("4. Display all cars");
-                        System.out.println("0. Logout");
-                        System.out.print("Enter your choice: ");
-                        String choice = scanner.nextLine();
-                        switch (choice)
-                        {
-                            case "1":
-                                Car car = getCarInput(scanner, currentUser.getUserId());
-                                ((Seller) currentUser).addCar(car);
-                                break;
-                            case "2":
-                                Car carUpdate = getCarInput(scanner, currentUser.getUserId());
-                                ((Seller) currentUser).updateCar(carUpdate);
-                                break;
-                            case "3":
-                                int carId = getIntInput(scanner, "Enter Car ID to remove: ");
-                                scanner.nextLine();
-                                ((Seller) currentUser).removeCar(carId);
-                                break;
-                            case "4":
-                                displayAllCars();
-                                break;
-                            case "0":
-                                currentUser = null;
-                                System.out.println("Logged out.");
-                                break;
-                            default:
-                                System.out.println("Invalid choice. Please try again.");
-                        }
-                    }
-                    else if (currentUser instanceof Buyer)
-                    {
-                        System.out.println("1. Browse Cars");
-                        System.out.println("2. Buy a Car");
-                        System.out.println("3. View Purchased Cars");
-                        System.out.println("4. Search Cars");
-                        System.out.println("0. Logout");
-                        System.out.print("Enter your choice: ");
-                        String choice = scanner.nextLine();
-                        switch (choice)
-                        {
-                            case "1":
-                                ((Buyer) currentUser).browseCars();
-                                break;
-                            case "2":
-                                int carId = getIntInput(scanner, "Enter Car ID to buy: ");
-                                scanner.nextLine();
-                                System.out.println("Choose payment method: card, cheque, or online");
-                                String paymentMethod = scanner.nextLine();
-                                ((Buyer) currentUser).buyCar(carId, paymentMethod);
-                                break;
-                            case "3":
-                                ((Buyer) currentUser).viewPurchasedCars();
-                                break;
-                            case "4":
-                                System.out.print("Enter model to search for (or leave blank): ");
-                                String model = scanner.nextLine();
-                                System.out.print("Enter company to search for (or leave blank): ");
-                                String company = scanner.nextLine();
-                                Double maxPrice = null;
-                                System.out.print("Enter maximum price (or leave blank): ");
-                                String maxPriceStr = scanner.nextLine();
-                                if (!maxPriceStr.isEmpty())
-                                {
-                                    try
-                                    {
-                                        maxPrice = Double.parseDouble(maxPriceStr);
-                                    }
-                                    catch (NumberFormatException e )
-                                    {
-                                        System.out.println("Invalid price format.  Searching without price limit.");
-                                    }
-                                }
-                                ((Buyer) currentUser).searchCars(model, company, maxPrice);
-                                break;
-                            case "0":
-                                currentUser = null;
-                                System.out.println("Logged out.");
-                                break;
-                            default:
-                                System.out.println("Invalid choice. Please try again.");
-                        }
-                    }
-                }
-            }
-        }
-        // Custom LL Implementation
-        static class Node<T>
-        {
-            T data;
-            Node<T> next;
-            public Node(T data)
-            {
-                this.data = data;
-                this.next = null;
-            }
-        }
-        static class LL<T>
-        {
-            private Node<T> head;
-            private int size;
-            public LL()
-            {
-                this.head = null;
-                this.size = 0;
-            }
-            public void add(T data)
-            {
-                Node<T> newNode = new Node<>(data);
-                if (head == null)
-                {
-                    head = newNode;
-                }
-                else
-                {
-                    Node<T> current = head;
-                    while (current.next != null)
-                    {
-                        current = current.next;
-                    }
-                    current.next = newNode;
-                }
-                size++;
-            }
-            public void insertAtBeginning(T data)
-            {
-                Node<T> newNode = new Node<>(data);
-                newNode.next = head;
-                head = newNode;
-                size++;
-            }
-            public void insertAtPosition(T data, int position)
-            {
-                if (position < 0 || position > size)
-                {
-                    throw new IndexOutOfBoundsException("Position is out of bounds");
-                }
-                if (position == 0)
-                {
-                    insertAtBeginning(data);
-                    return;
-                }
-                Node<T> newNode = new Node<>(data);
-                Node<T> current = head;
-                for (int i = 0; i < position - 1; i++)
-                {
-                    current = current.next;
-                }
-                newNode.next = current.next;
-                current.next = newNode;
-                size++;
-            }
-            public void deleteAtBeginning()
-            {
-                if (head == null)
-                {
-                    return;
-                }
-                head = head.next;
-                size--;
-            }
-            public void deleteAtEnd()
-            {
-                if (head == null)
-                {
-                    return;
-                }
-                if (head.next == null)
-                {
-                    head = null;
-                    size--;
-                    return;
-                }
-                Node<T> current = head;
-                while (current.next.next != null)
-                {
-                    current = current.next;
-                }
-                current.next = null;
-                size--;
-            }
-            public void deleteAtPosition(int position)
-            {
-                if (position < 0 || position >= size)
-                {
-                    throw new IndexOutOfBoundsException("Position is out of bounds");
-                }
-                if (position == 0)
-                {
-                    deleteAtBeginning();
-                    return;
-                }
-                Node<T> current = head;
-                for (int i = 0; i < position - 1; i++)
-                {
-                    current = current.next;
-                }
-                current.next = current.next.next;
-                size--;
-            }
-            public T get(int index)
-            {
-                if (index < 0 || index >= size)
-                {
-                    throw new IndexOutOfBoundsException("Index is out of bounds");
-                }
-                Node<T> current = head;
-                for (int i = 0; i < index; i++)
-                {
-                    current = current.next;
-                }
-                return current.data;
-            }
-            public void set(int index, T data)
-            {
-                if (index < 0 || index >= size)
-                {
-                    throw new IndexOutOfBoundsException("Index is out of bounds");
-                }
-                Node<T> current = head;
-                for (int i = 0; i < index; i++)
-                {
-                    current = current.next;
-                }
-                current.data = data;
-            }
-            public void remove(int index)
-            {
-                if (index < 0 || index >= size)
-                {
-                    throw new IndexOutOfBoundsException("Index is out of bounds");
-                }
-                if (index == 0)
-                {
-                    deleteAtBeginning();
-                    return;
-                }
-                Node<T> current = head;
-                for (int i = 0; i < index - 1; i++)
-                {
-                    current = current.next;
-                }
-                current.next = current.next.next;
-                size--;
-            }
-            public int size()
-            {
-                return size;
-            }
-            public boolean isEmpty()
-            {
-                return size == 0;
-            }
-            public void printList()
-            {
-                Node<T> current = head;
-                while (current != null)
-                {
-                    System.out.print(current.data + " ");
-                    current = current.next;
-                }
-                System.out.println();
             }
         }
     }
-    /*
-    Table: users
 
-    CREATE TABLE users ( user_id INT PRIMARY KEY, username VARCHAR(255) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL, role VARCHAR(50) NOT NULL );
+    // Custom LL Implementation
+    static class Node<T>
+    {
+        T data;
+        Node<T> next;
+        public Node(T data)
+        {
+            this.data = data;
+            this.next = null;
+        }
+    }
+    static class LL<T>
+    {
+        private Node<T> head;
+        private int size;
+        public LL()
+        {
+            this.head = null;
+            this.size = 0;
+        }
+        public void add(T data)
+        {
+            Node<T> newNode = new Node<>(data);
+            if (head == null)
+            {
+                head = newNode;
+            }
+            else
+            {
+                Node<T> current = head;
+                while (current.next != null)
+                {
+                    current = current.next;
+                }
+                current.next = newNode;
+            }
+            size++;
+        }
+        public void insertAtBeginning(T data)
+        {
+            Node<T> newNode = new Node<>(data);
+            newNode.next = head;
+            head = newNode;
+            size++;
+        }
+        public void insertAtPosition(T data, int position)
+        {
+            if (position < 0 || position > size)
+            {
+                throw new IndexOutOfBoundsException("Position is out of bounds");
+            }
 
-    Table: cars
+            if (position == 0)
+            {
+                insertAtBeginning(data);
+                return;
+            }
+            Node<T> newNode = new Node<>(data);
+            Node<T> current = head;
+            for (int i = 0; i < position - 1; i++)
+            {
+                current = current.next;
+            }
+            newNode.next = current.next;
+            current.next = newNode;
+            size++;
+        }
+        public void deleteAtBeginning()
+        {
+            if (head == null)
+            {
+                return;
+            }
+            head = head.next;
+            size--;
+        }
+        public void deleteAtEnd()
+        {
+            if (head == null)
+            {
+                return;
+            }
+            if (head.next == null)
+            {
+                head = null;
+                size--;
+                return;
+            }
+            Node<T> current = head;
+            while (current.next.next != null)
+            {
+                current = current.next;
+            }
+            current.next = null;
+            size--;
+        }
+        public void deleteAtPosition(int position)
+        {
+            if (position < 0 || position >= size)
+            {
+                throw new IndexOutOfBoundsException("Position is out of bounds");
+            }
+            if (position == 0)
+            {
+                deleteAtBeginning();
+                return;
+            }
+            Node<T> current = head;
+            for (int i = 0; i < position - 1; i++)
+            {
+                current = current.next;
+            }
+            current.next = current.next.next;
+            size--;
+        }
+        public T get(int index)
+        {
+            if (index < 0 || index >= size)
+            {
+                throw new IndexOutOfBoundsException("Index is out of bounds");
+            }
+            Node<T> current = head;
+            for (int i = 0; i < index; i++)
+            {
+                current = current.next;
+            }
+            return current.data;
+        }
+        public void set(int index, T data)
+        {
+            if (index < 0 || index >= size)
+            {
+                throw new IndexOutOfBoundsException("Index is out of bounds");
+            }
+            Node<T> current = head;
+            for (int i = 0; i < index; i++)
+            {
+                current = current.next;
+            }
+            current.data = data;
+        }
+        public void remove(int index)
+        {
+            if (index < 0 || index >= size)
+            {
+                throw new IndexOutOfBoundsException("Index is out of bounds");
+            }
+            if (index == 0)
+            {
+                deleteAtBeginning();
+                return;
+            }
+            Node<T> current = head;
+            for (int i = 0; i < index - 1; i++)
+            {
+                current = current.next;
+            }
+            current.next = current.next.next;
+            size--;
+        }
+        public int size()
+        {
+            return size;
+        }
+        public boolean isEmpty()
+        {
+            return size == 0;
+        }
+        public void printList()
+        {
+            Node<T> current = head;
+            while (current != null)
+            {
+                System.out.print(current.data + " ");
+                current = current.next;
+            }
+            System.out.println();
+        }
+    }
+}
+/*
+-- Users table
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'seller', 'buyer') NOT NULL,
+    phone_no VARCHAR(15) NOT NULL
+);
 
-    CREATE TABLE cars ( car_id INT PRIMARY KEY, company VARCHAR(255) NOT NULL, model VARCHAR(255) NOT NULL, year INT NOT NULL, description TEXT, reserve_price DECIMAL(10, 2) NOT NULL,
-    seller_id INT NOT NULL, approved BOOLEAN DEFAULT FALSE, sold BOOLEAN DEFAULT FALSE, FOREIGN KEY (seller_id) REFERENCES users(user_id));
+-- Cars table
+CREATE TABLE cars (
+    car_id INT AUTO_INCREMENT PRIMARY KEY,
+    company VARCHAR(50) NOT NULL,
+    model VARCHAR(50) NOT NULL,
+    year INT NOT NULL,
+    description TEXT,
+    reserve_price DECIMAL(10,2) NOT NULL,
+    seller_id INT NOT NULL,
+    fuel_type ENUM('Petrol', 'Diesel', 'Electric', 'Hybrid', 'CNG') NOT NULL,
+    approved BOOLEAN DEFAULT FALSE,
+    sold BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (seller_id) REFERENCES users(user_id)
+);
 
-    Table: purchases
-
-    CREATE TABLE purchases ( purchase_id INT AUTO_INCREMENT PRIMARY KEY, car_id INT NOT NULL, buyer_id INT NOT NULL, purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (car_id) REFERENCES cars(car_id), FOREIGN KEY (buyer_id) REFERENCES users(user_id));
-    */
+-- Purchases table
+CREATE TABLE purchases (
+    purchase_id INT AUTO_INCREMENT PRIMARY KEY,
+    car_id INT NOT NULL,
+    buyer_id INT NOT NULL,
+    purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (car_id) REFERENCES cars(car_id),
+    FOREIGN KEY (buyer_id) REFERENCES users(user_id)
+);
+ */
